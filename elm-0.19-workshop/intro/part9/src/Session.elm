@@ -1,14 +1,13 @@
-port module Session
-    exposing
-        ( Session
-        , changes
-        , cred
-        , decode
-        , login
-        , logout
-        , navKey
-        , viewer
-        )
+port module Session exposing
+    ( Session
+    , changes
+    , cred
+    , decode
+    , login
+    , logout
+    , navKey
+    , viewer
+    )
 
 import Browser.Navigation as Nav
 import Json.Decode as Decode exposing (Decoder)
@@ -96,9 +95,12 @@ authentication token to JavaScript.
     it was depending on the old name. Follow the compiler errors to fix them!
 
 -}
+port storeSession : Maybe String -> Cmd msg
+
+
 sendSessionToJavaScript : Maybe String -> Cmd msg
 sendSessionToJavaScript maybeAuthenticationToken =
-    Cmd.none
+    storeSession maybeAuthenticationToken
 
 
 
@@ -122,9 +124,12 @@ authentication token from JavaScript.
     it was depending on the old name. Follow the compiler errors to fix them!
 
 -}
+port onSessionChange : (Value -> msg) -> Sub msg
+
+
 receiveSessionFromJavaScript : (Value -> msg) -> Sub msg
 receiveSessionFromJavaScript toMsg =
-    Sub.none
+    onSessionChange toMsg
 
 
 decode : Nav.Key -> Value -> Session
