@@ -1,5 +1,6 @@
-module Character exposing (Character, empty, name, maxHp, armorClass, damageTaken, attack)
+module Character exposing (Character, empty, name, attack)
 import Lens exposing (Lens)
+import AbilityScores exposing (AbilityScores, AbilityScore)
 
 type Alignment
   = Good
@@ -12,6 +13,7 @@ type alias Character =
   , alignment : Alignment
   , armorClass : Int
   , damageTaken : Int
+  , abilityScores : AbilityScores
   }
 
 empty : Character
@@ -21,6 +23,7 @@ empty =
   , alignment = Good
   , armorClass = 10
   , damageTaken = 0
+  , abilityScores = AbilityScores.empty
   }
 
 name : Lens Character String
@@ -29,15 +32,23 @@ name =
 
 maxHp : Lens Character Int
 maxHp =
-  Lens.lens .maxHp (\b a -> { a | maxHp = b})
+  Lens.lens 
+    (\a -> a.maxHp + (AbilityScores.modifier a.abilityScores.constitution))
+    (\b a -> { a | maxHp = b})
 
 armorClass : Lens Character Int
 armorClass =
-  Lens.lens .armorClass (\b a -> { a | armorClass = b})
+  Lens.lens 
+    effectiveArmorClass
+   (\b a -> { a | armorClass = b})
 
 damageTaken : Lens Character Int
 damageTaken =
   Lens.lens .damageTaken (\b a -> { a | damageTaken = b})
+
+strengthModifier : Character -> Int
+strengthModifier char = AbilityScores.modifier char.abilityScores.strength
+  
 
 takeDamage : Int -> Character -> Character
 takeDamage amount character =
@@ -45,12 +56,27 @@ takeDamage amount character =
 
 attack : Character -> Character -> Int -> Character
 attack attacker defender roll =
-  if roll >= (armorClass.view defender) then
-    takeDamage 1 defender
-  else if roll == 20 then
-    takeDamage 1 defender
+  let
+    modifiedRoll = attackRoll roll attacker
+  in
+  if roll == 20 then
+    takeDamage ((calcDamage attacker) * 2) defender
+  else if modifiedRoll >= (armorClass.view defender) then
+    takeDamage (calcDamage attacker) defender
   else 
     defender
+
+attackRoll : Int -> Character -> Int
+attackRoll roll char =
+  roll + (strengthModifier char)
+
+calcDamage : Character -> Int
+calcDamage char =
+  1 + (strengthModifier char)
+
+effectiveArmorClass : Character -> Int
+effectiveArmorClass char = 
+  char.armorClass + (AbilityScores.modifier char.abilityScores.dexterity)
 
 
 
